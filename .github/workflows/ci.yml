@@ -1,3 +1,5 @@
+# Syntax reference: https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions
+
 name: CI
 
 on:
@@ -81,7 +83,7 @@ jobs:
 
   test:
     env:
-      DOCKER_IMAGE: docker.pkg.github.com/danmichaelo/test-github-actions/test-app:${{ env.GITHUB_SHA }}
+      DOCKER_IMAGE: docker.pkg.github.com/danmichaelo/test-github-actions/test-app:${{ github.sha }}
     runs-on: ubuntu-latest
     container: ${DOCKER_IMAGE}
 
