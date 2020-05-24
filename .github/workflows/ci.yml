@@ -74,8 +74,8 @@ jobs:
       - name: Build & publish container
         uses: docker/build-push-action@v1
         with:
-          username: ${{ env.GITHUB_ACTOR }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: login
+          password: login
           dockerfile: container/Dockerfile
           registry: docker.pkg.github.com
           repository: danmichaelo/test-github-actions/test-app
