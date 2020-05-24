@@ -1,73 +1,105 @@
-name: Build & test
+name: CI
 
 on:
   push:
   repository_dispatch:
 
 jobs:
+
   build:
-
     runs-on: ubuntu-latest
-
-    env:
-      APP_ENV: staging
 
     steps:
 
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Inspect environment
-      run: |
-        echo "$(docker --version) $(docker-compose --version)"
-        echo "$(podman --version) $(buildah --version) $(skopeo --version)"
+      - name: Inspect environment
+        run: |
+          echo "$(docker --version) $(docker-compose --version)"
+          echo "$(podman --version) $(buildah --version) $(skopeo --version)"
 
-    - name: Setup PHP, with composer and extensions
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: '7.4'
-        extensions: pdo, pdo_pgsql, gd
+      # ---
 
-    - uses: actions/setup-node@v2-beta
-      with:
-        node-version: '12'
+      - name: Setup PHP, with composer and extensions
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: pdo, pdo_pgsql, gd
 
-    - name: Inspect environment
-      run: |
-        docker -v
-        docker-compose -v
-        php -v
-        node -v
+      - name: Setup Node
+        uses: actions/setup-node@v2-beta
+        with:
+          node-version: '12'
 
-    # ---
+      # ---
 
-    - name: Get composer cache directory
-      id: composer-cache
-      run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
 
-    - name: Cache composer dependencies
-      uses: actions/cache@v1
-      with:
-        path: ${{ steps.composer-cache.outputs.dir }}
-        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-        restore-keys: ${{ runner.os }}-composer-
+      - name: Cache composer dependencies
+        uses: actions/cache@v1
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
 
-    - name: Install composer dependencies
-      run: composer install --prefer-dist
-      env:
-        COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install composer dependencies
+        run: composer install --prefer-dist
+        env:
+          COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # ---
+      # ---
 
-    - name: Get node.js cache directory
-      id: node-cache-dir
-      run: echo "::set-output name=dir::$(npm config get cache)"
+      - name: Get node.js cache directory
+        id: node-cache-dir
+        run: echo "::set-output name=dir::$(npm config get cache)"
 
-    - name: Cache node.js dependencies
-      uses: actions/cache@v1
-      with:
-        path: ${{ steps.node-cache-dir.outputs.dir }}
-        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: ${{ runner.os }}-node-
+      - name: Cache node.js dependencies
+        uses: actions/cache@v1
+        with:
+          path: ${{ steps.node-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: ${{ runner.os }}-node-
 
-    - name: Install node.js dependencies
-      run: npm install
+      - name: Install node.js dependencies
+        run: npm install
+
+      # ---
+
+      # https://github.com/marketplace/actions/build-and-push-docker-images
+      - name: Build & publish container
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ env.GITHUB_ACTOR }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          dockerfile: container/Dockerfile
+          registry: docker.pkg.github.com
+          repository: danmichaelo/test-github-actions/test-app
+          tag_with_ref: true
+          tag_with_sha: true
+
+  test:
+    runs-on: ubuntu-latest
+    container: docker.pkg.github.com/danmichaelo/test-github-actions/test-app:${{ env.GITHUB_SHA }}
+
+    # Service containers to run with `container-job`
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Hello world
+        run: ls
+
