@@ -80,8 +80,10 @@ jobs:
           tag_with_sha: true
 
   test:
+    env:
+      DOCKER_IMAGE: docker.pkg.github.com/danmichaelo/test-github-actions/test-app:${{ env.GITHUB_SHA }}
     runs-on: ubuntu-latest
-    container: docker.pkg.github.com/danmichaelo/test-github-actions/test-app:${{ env.GITHUB_SHA }}
+    container: ${DOCKER_IMAGE}
 
     # Service containers to run with `container-job`
     services:
