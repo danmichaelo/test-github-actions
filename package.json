@@ -1,0 +1,23 @@
+{
+  "name": "test-github-actions",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "parcel index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danmichaelo/test-github-actions.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/danmichaelo/test-github-actions/issues"
+  },
+  "homepage": "https://github.com/danmichaelo/test-github-actions#readme",
+  "dependencies": {
+    "moment": "^2.26.0"
+  }
+}

@@ -1,0 +1,73 @@
+name: Build & test
+
+on:
+  push:
+  repository_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    env:
+      APP_ENV: staging
+
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - name: Inspect environment
+      run: |
+        echo "$(docker --version) $(docker-compose --version)"
+        echo "$(podman --version) $(buildah --version) $(skopeo --version)"
+
+    - name: Setup PHP, with composer and extensions
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '7.4'
+        extensions: pdo, pdo_pgsql, gd
+
+    - uses: actions/setup-node@v2-beta
+      with:
+        node-version: '12'
+
+    - name: Inspect environment
+      run: |
+        docker -v
+        docker-compose -v
+        php -v
+        node -v
+
+    # ---
+
+    - name: Get composer cache directory
+      id: composer-cache
+      run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+    - name: Cache composer dependencies
+      uses: actions/cache@v1
+      with:
+        path: ${{ steps.composer-cache.outputs.dir }}
+        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: ${{ runner.os }}-composer-
+
+    - name: Install composer dependencies
+      run: composer install --prefer-dist
+      env:
+        COMPOSER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # ---
+
+    - name: Get node.js cache directory
+      id: node-cache-dir
+      run: echo "::set-output name=dir::$(npm config get cache)"
+
+    - name: Cache node.js dependencies
+      uses: actions/cache@v1
+      with:
+        path: ${{ steps.node-cache-dir.outputs.dir }}
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: ${{ runner.os }}-node-
+
+    - name: Install node.js dependencies
+      run: npm install

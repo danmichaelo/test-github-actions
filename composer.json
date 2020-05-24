@@ -1,0 +1,14 @@
+{
+    "name": "danmichael/test-github-actions",
+    "type": "project",
+    "require": {
+        "scriptotek/marc": "^2.1"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Dan Michael O. Heggø",
+            "email": "danmichaelo@gmail.com"
+        }
+    ]
+}
