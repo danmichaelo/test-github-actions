@@ -6,6 +6,10 @@ on:
   push:
   repository_dispatch:
 
+env:
+  DOCKER_REGISTRY: docker.pkg.github.com
+  DOCKER_PACKAGE: ${{ github.repository}}/test-app
+
 jobs:
 
   build:
@@ -13,20 +17,20 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      shortsha: ${{ steps.dockerimagename.outputs.dockerimagename }}
+      docker-image-name: ${{ steps.docker-image-name.outputs.docker-image-name }}
 
     steps:
 
       - name: Define docker image name
-        id: dockerimagename
+        id: docker-image-name
         run: |
-          echo "##[set-output name=dockerimagename;]$(echo docker.pkg.github.com/${{ github.repository}}/test-app:${GITHUB_SHA::7})"
+          echo "##[set-output name=docker-image-name;]$(echo ${DOCKER_REGISTRY}/${DOCKER_PACKAGE}:sha-${GITHUB_SHA::7})"
 
       - uses: actions/checkout@v2
 
       - name: Inspect environment
         run: |
-          echo "Planning to build: ${{ steps.dockerimagename.outputs.dockerimagename }}"
+          echo "Planning to build: ${{ steps.docker-image-name.outputs.docker-image-name }}"
           echo "$(docker --version) $(docker-compose --version)"
           echo "$(podman --version) $(buildah --version) $(skopeo --version)"
 
@@ -86,18 +90,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
           dockerfile: container/Dockerfile
-          registry: docker.pkg.github.com
-          repository: ${{ github.repository }}/test-app
+          registry: ${{ env.DOCKER_REGISTRY }}
+          repository: ${{ env.DOCKER_PACKAGE }}
           tag_with_ref: true
           tag_with_sha: true
 
   test:
     name: Run tests
     needs: build
-    env:
-      DOCKER_IMAGE: ${{needs.build.outputs.dockerimagename}}
     runs-on: ubuntu-latest
-    container: $DOCKER_IMAGE
+    container: ${{needs.build.outputs.docker-image-name}}
 
     # Service containers to run with `container-job`
     services:
