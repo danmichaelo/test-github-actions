@@ -12,25 +12,21 @@ jobs:
     name: Build container
     runs-on: ubuntu-latest
 
+    outputs:
+      shortsha: ${{ steps.dockerimagename.outputs.dockerimagename }}
+
     steps:
 
-      # Store output
-      - id: shortsha
+      - name: Define docker image name
+        id: dockerimagename
         run: |
-          echo "##[set-output name=shortsha;]$(echo ${GITHUB_SHA::7})"
-
-      # Use output from last step
-      - run: |
-          echo "Test: $SHORTSHA"
-        env:
-          SHORTSHA: ${{ steps.shortsha.outputs.shortsha }}
-
+          echo "##[set-output name=dockerimagename;]$(echo docker.pkg.github.com/${{ github.repository}}/test-app:${GITHUB_SHA::7})"
 
       - uses: actions/checkout@v2
 
       - name: Inspect environment
         run: |
-          echo "Planning to build: $DOCKER_IMAGE"
+          echo "Planning to build: ${{ steps.dockerimagename.outputs.dockerimagename }}"
           echo "$(docker --version) $(docker-compose --version)"
           echo "$(podman --version) $(buildah --version) $(skopeo --version)"
 
@@ -99,7 +95,7 @@ jobs:
     name: Run tests
     needs: build
     env:
-      DOCKER_IMAGE: docker.pkg.github.com/danmichaelo/test-github-actions/test-app:sha-${GITHUB_SHA::7}
+      DOCKER_IMAGE: ${{needs.build.outputs.dockerimagename}}
     runs-on: ubuntu-latest
     container: $DOCKER_IMAGE
 
