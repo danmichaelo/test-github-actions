@@ -12,10 +12,19 @@ jobs:
     name: Build container
     runs-on: ubuntu-latest
 
-    env:
-      DOCKER_IMAGE: docker.pkg.github.com/danmichaelo/test-github-actions/test-app:sha-${GITHUB_SHA::7}
-
     steps:
+
+      # Store output
+      - id: shortsha
+        run: |
+          echo "##[set-output name=shortsha;]$(echo ${GITHUB_SHA::7})"
+
+      # Use output from last step
+      - run: |
+          echo "Test: $SHORTSHA"
+        env:
+          SHORTSHA: ${{ steps.shortsha.outputs.shortsha }}
+
 
       - uses: actions/checkout@v2
 
